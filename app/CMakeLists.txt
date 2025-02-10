@@ -10,3 +10,5 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(app LANGUAGES C)
 
 target_sources(app PRIVATE src/main.c)
+
+set(BOARD nrf54l15dk_nrf54l15)
