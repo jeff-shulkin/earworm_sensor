@@ -38,7 +38,7 @@
              reg = <0>;
 
              /* Configure other ADXL367 properties as needed.
-             spi-max-frequency = <4000000>;
+             spi-max-frequency = <8000000>;
              duplex = <0>; /* full duplex */
              frame-format = <0>; /* Motorola frames */
              spi-cpol = <false>;
