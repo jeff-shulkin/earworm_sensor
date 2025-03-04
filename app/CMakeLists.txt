@@ -19,6 +19,9 @@ target_include_directories(app PRIVATE include)
 # Source files for the app
 target_sources(app PRIVATE src/main.c)
 target_sources(app PRIVATE src/power_failure/pfc.c)
+target_sources(app PRIVATE src/accel/accel.c)
+target_sources(app PRIVATE src/accel/filter.c)
+target_sources(app PRIVATE src/ble/ble.c)
 
 # Set the target board
 set(BOARD nrf54l15dk_nrf54l15)
