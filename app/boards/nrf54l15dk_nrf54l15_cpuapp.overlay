@@ -1,23 +1,43 @@
 /*
- * Copyright (c) 2025 Nordic Semiconductor ASA
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) 2024 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-/* This devicetree overlay file will be automatically picked by the Zephyr
- * build system when building the sample for the nRF54l15 DK (cpuapp) board.
- * It shows how the ncs-example-application can be built on sample boards
- * already provided by Zephyr or NCS.
- */
+&pinctrl {
+    spi00_default: spi00_default {
+            psels = <NRF_PSEL(SPIM_SCK, 2, 1)>,  /* P2.01 - SCK */
+                    <NRF_PSEL(SPIM_MOSI, 2, 2)>, /* P2.02 - MOSI */
+                    <NRF_PSEL(SPIM_MISO, 2, 3)>; /* P2.03 - MISO */
+    };
+    spi00_sleep: spi00_sleep {
+            psels = <NRF_PSEL(SPIM_SCK, 2, 1)>,  /* P2.01 - SCK */
+                    <NRF_PSEL(SPIM_MOSI, 2, 2)>, /* P2.02 - MOSI */
+                    <NRF_PSEL(SPIM_MISO, 2, 3)>; /* P2.03 - MISO */
+            low-power-enable;
+    };
+};
 
-/ {
-	example_sensor: example-sensor {
-		compatible = "zephyr,example-sensor";
-		input-gpios = <&gpio1 13 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-	};
+&led0 {
+    status = "okay";
+    gpios = <&gpio2 9 GPIO_ACTIVE_HIGH>;
+};
 
-	blink_led: blink-led {
-		compatible = "blink-gpio-led";
-		led-gpios = <&gpio2 9 GPIO_ACTIVE_HIGH>;
-		blink-period-ms = <1000>;
-	};
+&spi00 { 
+    status = "okay";
+    cs-gpios = <&gpio2 5 GPIO_ACTIVE_LOW>,
+               <&gpio2 15 GPIO_ACTIVE_LOW>;
+     adxl367: adxl367@1 {
+             compatible = "adi,adxl367";
+             label = "heartbeats";
+             reg = <1>;
+
+             /* Configure other ADXL367 properties as needed. */
+             spi-max-frequency = <8000000>;
+             duplex = <0>; /* full duplex */
+             frame-format = <0>; /* Motorola frames */
+             spi-hold-cs;
+             odr = <2>; /* ODR: 50 Hz */
+             int1-gpios = <&gpio2 5 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>; /* P2.05 interrupt */
+     };
 };
