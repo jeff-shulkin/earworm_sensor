@@ -7,3 +7,8 @@ const struct device *adxl367_dev;
 void check_adxl367(void);
 bool setup_adxl367(void);
 void retrieve_adxl367_fifo_biffer(void);
+
+// filter
+void init_bandpass_filter();
+
+void process_bandpass_filter(float32_t *input, float32_t *output);
