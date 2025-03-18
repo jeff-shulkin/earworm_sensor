@@ -1,5 +1,5 @@
 #include "../../include/pfc.h"
-
+#include <limits.h>
 /* 1000 msec = 1 sec */
 #define SLEEP_TIME_MS   1000
 
@@ -32,7 +32,12 @@ void power_fail_handler(void)
  */
 void pof_deep_sleep(void)
 {
-    //TODO
+    //int ret = pm_device_action_run(cons, PM_DEVICE_ACTION_SUSPEND);
+}
+
+void pof_idle_sleep(void)
+{
+    //pm_state_force(0, &(struct pm_state_info){PM_STATE_SUSPEND_TO_RAM, 0, 0});
 }
 
 void configure_pof_interrupt(void)
@@ -40,7 +45,7 @@ void configure_pof_interrupt(void)
     // Step 1: Initialize the Power-Fail Comparator (PFC)
     nrfx_power_pofwarn_config_t pof_config = {
         .thr = NRF_POWER_POFTHR_V17,  // Set threshold to 1.7V
-	.handler = power_fail_handler
+	    .handler = power_fail_handler
     };
 
     nrfx_power_pof_init(&pof_config);

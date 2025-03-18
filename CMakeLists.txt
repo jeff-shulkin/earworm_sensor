@@ -5,8 +5,8 @@ project(earworm_sensor)
 
 target_sources(app PRIVATE src/main.c)
 target_sources(app PRIVATE src/power_failure/pfc.c)
-# target_sources(app PRIVATE src/accel/accel.c)
+target_sources(app PRIVATE src/accel/accel.c)
 # target_sources(app PRIVATE src/accel/filter.c)
-target_sources(app PRIVATE src/ble/ble.c)
+# target_sources(app PRIVATE src/ble/ble.c)
 
-set(BOARD nrf54l15dk_nrf54l15)
+#set(BOARD nrf54l15dk_nrf54l15)

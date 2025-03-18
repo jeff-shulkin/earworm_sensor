@@ -4,8 +4,3 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-/ {
-	chosen {
-		nordic,nus-uart = &uart0;
-	};
-};

@@ -4,6 +4,7 @@
  */
 
 #include "../include/pfc.h"
+#include "../include/accel.h"
 
  #include <zephyr/kernel.h>
  #include <stdio.h>
@@ -22,8 +23,10 @@
   */
  static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 
+
 int main(void)
 {
+	const struct device adxl367_dev;
     printk("Initializing Power-Fail Comparator...\n");
 
 	int ret;
@@ -39,7 +42,8 @@ int main(void)
 	}
 
     configure_pof_interrupt();
-
+	check_adxl367(&adxl367_dev);
+	test_adxl367(&adxl367_dev);
 
     while (1)
     {
