@@ -167,7 +167,6 @@ void ble_init(void)
     LOG_INF("Bluetooth initialized");
 
     /* Set TX Power to 0 dBm */
-    // TODO
     // set_tx_power();
 
     k_sem_give(&ble_init_ok);

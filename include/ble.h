@@ -16,6 +16,12 @@
 
 #include <zephyr/bluetooth/hci.h>
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <zephyr/net_buf.h>
+#include <zephyr/bluetooth/addr.h>
+#include <zephyr/bluetooth/hci_types.h>
+
 #define STACKSIZE CONFIG_BT_NUS_THREAD_STACK_SIZE
 #define PRIORITY 7
 
