@@ -7,6 +7,8 @@
 #include "../include/accel.h"
 
  #include <zephyr/kernel.h>
+ #include <zephyr/device.h>
+ #include <zephyr/devicetree.h>
  #include <stdio.h>
  #include <zephyr/drivers/gpio.h>
 
@@ -16,21 +18,20 @@
  
  /* The devicetree node identifier for the "led0" alias. */
  #define LED0_NODE DT_ALIAS(led0)
- 
+ #define ACCEL_NODE DT_ALIAS(adxl367)
  /*
   * A build error on this line means your board is unsupported.
   * See the sample documentation for information on how to fix this.
   */
  static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
-
+ const struct device *const adxl367_dev = DEVICE_DT_GET(DT_NODELABEL(adxl367));
 
 int main(void)
 {
-	const struct device adxl367_dev;
+	struct rtio_sqe *handle;
     printk("Initializing Power-Fail Comparator...\n");
-
 	int ret;
-	bool led_state = true;
+	//bool led_state = true;
 
 	if (!gpio_is_ready_dt(&led)) {
 		return 0;
@@ -42,12 +43,21 @@ int main(void)
 	}
 
     configure_pof_interrupt();
-	check_adxl367(&adxl367_dev);
-	test_adxl367(&adxl367_dev);
+	if (!check_adxl367(adxl367_dev)) {
+		exit(1);
+	}
+
+	if (!setup_adxl367_fifo_buffer(adxl367_dev, handle)) {
+		exit(1);
+	}
+
+	test_adxl367(adxl367_dev);
+	uint8_t buffer[1024] = {0};
 
     while (1)
     {
         k_sleep(K_SECONDS(1));  // Sleep to reduce CPU usage
+		retrieve_adxl367_fifo_buffer(adxl367_dev, buffer, 1024);
     }
 
 	return 0;
