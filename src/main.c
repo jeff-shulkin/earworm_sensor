@@ -54,10 +54,13 @@ int main(void)
 	test_adxl367(adxl367_dev);
 	uint8_t buffer[1024] = {0};
 
+	ble_init();
+
     while (1)
     {
         k_sleep(K_SECONDS(1));  // Sleep to reduce CPU usage
 		retrieve_adxl367_fifo_buffer(adxl367_dev, buffer, 1024);
+		ble_send_thread(buffer, (void *)sizeof(buffer));
     }
 
 	return 0;

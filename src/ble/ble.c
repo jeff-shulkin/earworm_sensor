@@ -198,15 +198,18 @@ void error(void)
 }
 
 /* Thread for sending BLE messages */
-void ble_send_thread(void)
+void ble_send_thread(void* p1, void* p2)
 {
     /* Wait until BLE is initialized */
     k_sem_take(&ble_init_ok, K_FOREVER);
 
+    uint8_t *buffer = (uint8_t *)p1;
+    size_t length = (size_t)p2;
+
     while (1) {
         if (current_conn) {  // Send only if a device is connected
             const char msg[] = "Hello, nRF_iphone!";
-            int err = bt_nus_send(current_conn, msg, sizeof(msg) - 1);
+            int err = bt_nus_send(current_conn, buffer, length);
             if (err) {
                 LOG_WRN("Failed to send data over BLE (err %d)", err);
             } else {
