@@ -220,4 +220,4 @@ void ble_send_thread(void* p1, void* p2)
     }
 }
 
-K_THREAD_DEFINE(ble_send_thread_id, STACKSIZE, ble_send_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+//K_THREAD_DEFINE(ble_send_thread_id, STACKSIZE, ble_send_thread, NULL, NULL, NULL, PRIORITY, 0, 0);

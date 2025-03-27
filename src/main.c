@@ -5,6 +5,7 @@
 
 #include "../include/pfc.h"
 #include "../include/accel.h"
+#include "../include/ble.h"
 
  #include <zephyr/kernel.h>
  #include <zephyr/device.h>
@@ -51,7 +52,7 @@ int main(void)
 		exit(1);
 	}
 
-	test_adxl367(adxl367_dev);
+	//test_adxl367(adxl367_dev);
 	uint8_t buffer[1024] = {0};
 
 	ble_init();
@@ -59,7 +60,10 @@ int main(void)
     while (1)
     {
         k_sleep(K_SECONDS(1));  // Sleep to reduce CPU usage
-		retrieve_adxl367_fifo_buffer(adxl367_dev, buffer, 1024);
+		if (!retrieve_adxl367_fifo_buffer(adxl367_dev, buffer, 1024)) {
+			printk("Failed to retrieve FIFO buffer.\n");
+			exit(1);
+		}
 		ble_send_thread(buffer, (void *)sizeof(buffer));
     }
 
