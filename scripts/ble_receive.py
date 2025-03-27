@@ -5,9 +5,21 @@ import os
 import numpy as np
 import scipy as sp
 from bleak import BleakClient, BleakScanner
+from matplotlib import pyplot as plt
 
 EARWORM_MAC = "EF:90:1:F7:43:EA"
 EARWORM_NAME = "earworm_ble"
+UART_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+
+DATA_OFFSET = 0
+
+FRAME_SIZE = 6
+XYZ_SIZE = 2
+X_OFFSET = 0
+Y_OFFSET = 2
+Z_OFFSET = 4
+
+XYZ_SENSITIVITY = 0.001
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -45,10 +57,18 @@ async def connect_and_dump_packets(device):
             # Here we assume a generic way of receiving packets, but you should use the specific service UUIDs for your device.
             try:
                 # For the sake of simplicity, we'll print received data as raw bytes
-                data = await client.read_gatt_char(
-                    "your-characteristic-uuid"
-                )  # Replace with the actual UUID
-                logger.info(f"Received packet: {data.hex()}")
+                data = await client.read_gatt_char(UART_UUID)
+                metadata = data[0:DATA_OFFSET]
+                x, y, z = []
+                idx = DATA_OFFSET
+                while idx < len(data):
+                    x.append(XYZ_SENSITIVITY * data[idx + X_OFFSET : idx + XYZ_SIZE])
+                    y.append(XYZ_SENSITIVITY * data[idx + Y_OFFSET : idx + XYZ_SIZE])
+                    z.append(XYZ_SENSITIVITY * data[idx + Z_OFFSET : idx + XYZ_SIZE])
+                    idx += 6
+
+                plt.plot(x, y, z)
+                # logger.info(f"Received packet: {data.hex()}")
             except Exception as e:
                 logger.error(f"Error while receiving data: {e}")
                 break
