@@ -8,9 +8,11 @@
 
 #define NUM_SENSORS 1
 SENSOR_DT_STREAM_IODEV(accel_stream, DT_NODELABEL(adxl367), \
-    {SENSOR_TRIG_FIFO_FULL, SENSOR_STREAM_DATA_INCLUDE});
+    {SENSOR_TRIG_FIFO_WATERMARK, SENSOR_STREAM_DATA_INCLUDE},
+    {SENSOR_TRIG_FIFO_FULL, SENSOR_STREAM_DATA_NOP});
 
 RTIO_DEFINE_WITH_MEMPOOL(accel_ctx, SQ_SZ, CQ_SZ, NUM_BLKS, BLK_SZ, BLK_ALIGN);
+//RTIO_DEFINE(accel_ctx, SQ_SZ, CQ_SZ);
 
 
 bool check_adxl367(const struct device *adxl367_dev)
@@ -28,18 +30,18 @@ bool check_adxl367(const struct device *adxl367_dev)
     return true;
 }
 
-bool setup_adxl367_fifo_buffer(const struct device *dev, struct rtio_sqe *handle) {
+bool setup_adxl367_fifo_buffer(const struct device *dev) {
     int ret;
 
-    enum adxl367_fifo_mode fifo_mode = ADXL367_OLDEST_SAVED;
+    enum adxl367_fifo_mode fifo_mode = ADXL367_STREAM_MODE;
     enum adxl367_fifo_format fifo_format = ADXL367_FIFO_FORMAT_XYZ;
     enum adxl367_fifo_read_mode read_mode = ADXL367_14B_CHID;
-    uint8_t sets_nb = 171;
+    uint8_t sets_nb = 170;
 
-    struct sensor_trigger trig = {
-		.type = SENSOR_TRIG_FIFO_FULL,
-		.chan = SENSOR_CHAN_ACCEL_XYZ,
-	};
+    // struct sensor_trigger trig = {
+	// 	.type = SENSOR_TRIG_FIFO_FULL,
+	// 	.chan = SENSOR_CHAN_ACCEL_XYZ,
+	// };
 
     // Briefly disable measurement mode so we can alter fifo setup
     ret = adxl367_set_op_mode(dev, ADXL367_STANDBY);
@@ -66,18 +68,19 @@ bool setup_adxl367_fifo_buffer(const struct device *dev, struct rtio_sqe *handle
         return false;
     }
 
-    ret = sensor_stream(&accel_stream, &accel_ctx, NULL, &handle);
-    if (ret) {
-        printk("ADXL FIFO setup: failed to start sensor stream.\n");
-        return false;
-    }
-
     return true;
 }
 
 bool retrieve_adxl367_fifo_buffer(const struct device *dev, uint8_t *buf, uint32_t buf_len) {
     int rc;
+    struct rtio_sqe *handle;
     struct rtio_cqe *cqe;
+    
+    rc = sensor_stream(&accel_stream, &accel_ctx, buf, &handle);
+    if (rc) {
+        printk("ADXL FIFO setup: failed to start sensor stream.\n");
+        return false;
+    }
 
     cqe = rtio_cqe_consume_block(&accel_ctx);
     if (cqe->result != 0) {
@@ -90,6 +93,8 @@ bool retrieve_adxl367_fifo_buffer(const struct device *dev, uint8_t *buf, uint32
 		printk("get mempool buffer failed %d\n", rc);
 		return false;
 	}
+
+    printk("Successfully read FIFO buffer.\n");
 
     rtio_cqe_release(&accel_ctx, cqe);
     rtio_release_buffer(&accel_ctx, buf, buf_len);
@@ -117,7 +122,8 @@ void test_adxl367(const struct device *adxl367_dev) {
 }
 
 bool test_adxl367_sensor_stream(const struct device *adxl367_dev) {
-	int rc = 0;
+	static bool flag = false;
+    int rc = 0;
 	const struct sensor_decoder_api *decoder;
     struct sensor_chan_spec accel_chan = { SENSOR_CHAN_ACCEL_XYZ, 0 };
 	struct rtio_cqe *cqe;
@@ -129,7 +135,16 @@ bool test_adxl367_sensor_stream(const struct device *adxl367_dev) {
     
 	/* Start the stream */
 	printk("sensor_stream\n");
-	sensor_stream(&accel_stream, &accel_ctx, NULL, &handle);
+    if (!flag) {
+        rc = sensor_stream(&accel_stream, &accel_ctx, buf, &handle);
+        flag = true;
+    }
+    //rc = sensor_stream(&accel_stream, &accel_ctx, buf, &handle);
+    if (rc) {
+        printk("ADXL FIFO setup: failed to start sensor stream.\n");
+        return false;
+    }
+    k_sleep(K_SECONDS(10));
 
 	while (1) {
 		cqe = rtio_cqe_consume_block(&accel_ctx);
@@ -146,7 +161,10 @@ bool test_adxl367_sensor_stream(const struct device *adxl367_dev) {
 			return false;
 		}
 
+        printk("Successfully obtained FIFO buffer - test\n");
+
 		const struct device *sensor = adxl367_dev;
+
 
 		rtio_cqe_release(&accel_ctx, cqe);
 

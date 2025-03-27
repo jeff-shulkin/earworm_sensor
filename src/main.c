@@ -29,7 +29,6 @@
 
 int main(void)
 {
-	struct rtio_sqe *handle;
     printk("Initializing Power-Fail Comparator...\n");
 	int ret;
 	//bool led_state = true;
@@ -48,23 +47,27 @@ int main(void)
 		exit(1);
 	}
 
-	if (!setup_adxl367_fifo_buffer(adxl367_dev, handle)) {
+	if (!setup_adxl367_fifo_buffer(adxl367_dev)) {
 		exit(1);
 	}
 
-	//test_adxl367(adxl367_dev);
+	test_adxl367(adxl367_dev);
 	uint8_t buffer[1024] = {0};
 
-	ble_init();
+	//ble_init();
 
     while (1)
     {
         k_sleep(K_SECONDS(1));  // Sleep to reduce CPU usage
-		if (!retrieve_adxl367_fifo_buffer(adxl367_dev, buffer, 1024)) {
-			printk("Failed to retrieve FIFO buffer.\n");
+		// if (!retrieve_adxl367_fifo_buffer(adxl367_dev, buffer, 1024)) {
+		// 	printk("Failed to retrieve FIFO buffer.\n");
+		// 	exit(1);
+		// }
+		if (!test_adxl367_sensor_stream(adxl367_dev)) {
+			printk("Failed to retrieve FIFO buffer - test.\n");
 			exit(1);
 		}
-		ble_send_thread(buffer, (void *)sizeof(buffer));
+		//ble_send_thread(buffer, (void *)sizeof(buffer));
     }
 
 	return 0;

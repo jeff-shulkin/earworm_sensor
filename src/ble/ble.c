@@ -211,9 +211,9 @@ void ble_send_thread(void* p1, void* p2)
             const char msg[] = "Hello, nRF_iphone!";
             int err = bt_nus_send(current_conn, buffer, length);
             if (err) {
-                LOG_WRN("Failed to send data over BLE (err %d)", err);
+                printk("Failed to send data over BLE (err %d)", err);
             } else {
-                LOG_INF("Sent: %s", msg);
+                printk("Sent: %s", msg);
             }
         }
         k_sleep(K_SECONDS(5)); // Send every 5 seconds
