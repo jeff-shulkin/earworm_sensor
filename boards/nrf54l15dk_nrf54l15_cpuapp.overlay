@@ -47,7 +47,7 @@
             label = "adxl367";
             reg = <0>;
             /* Configure other ADXL367 properties as needed. */
-            spi-max-frequency = <DT_FREQ_M(4)>;
+            spi-max-frequency = <DT_FREQ_M(1)>;
             odr = <2>; /* ODR: 50 Hz */
             int1-gpios = <&gpio1 12 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>; /* P1.12 interrupt */
      };

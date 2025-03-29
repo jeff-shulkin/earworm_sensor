@@ -33,7 +33,7 @@
 
 /* Function prototypes */
 void ble_init(void);
-void ble_send_thread(void* p1, void* p2);
+void ble_send_thread(void);
 void error(void);
 
 #endif /* BLE_H */

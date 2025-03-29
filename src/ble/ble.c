@@ -198,13 +198,11 @@ void error(void)
 }
 
 /* Thread for sending BLE messages */
-void ble_send_thread(void* p1, void* p2)
+void ble_send_thread(void)
 {
     /* Wait until BLE is initialized */
     k_sem_take(&ble_init_ok, K_FOREVER);
 
-    uint8_t *buffer = (uint8_t *)p1;
-    size_t length = (size_t)p2;
 
     while (1) {
         if (current_conn) {  // Send only if a device is connected
@@ -220,4 +218,4 @@ void ble_send_thread(void* p1, void* p2)
     }
 }
 
-//K_THREAD_DEFINE(ble_send_thread_id, STACKSIZE, ble_send_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(ble_send_thread_id, STACKSIZE, ble_send_thread, NULL, NULL, NULL, PRIORITY, 0, 0);

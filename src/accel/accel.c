@@ -8,8 +8,8 @@
 
 #define NUM_SENSORS 1
 SENSOR_DT_STREAM_IODEV(accel_stream, DT_NODELABEL(adxl367), \
-    {SENSOR_TRIG_FIFO_WATERMARK, SENSOR_STREAM_DATA_INCLUDE},
-    {SENSOR_TRIG_FIFO_FULL, SENSOR_STREAM_DATA_NOP});
+     {SENSOR_TRIG_FIFO_WATERMARK, SENSOR_STREAM_DATA_INCLUDE});
+//SENSOR_DT_READ_IODEV(accel_stream, DT_NODELABEL(adxl367), { SENSOR_CHAN_ACCEL_XYZ, 0 });
 
 RTIO_DEFINE_WITH_MEMPOOL(accel_ctx, SQ_SZ, CQ_SZ, NUM_BLKS, BLK_SZ, BLK_ALIGN);
 //RTIO_DEFINE(accel_ctx, SQ_SZ, CQ_SZ);
@@ -37,11 +37,6 @@ bool setup_adxl367_fifo_buffer(const struct device *dev) {
     enum adxl367_fifo_format fifo_format = ADXL367_FIFO_FORMAT_XYZ;
     enum adxl367_fifo_read_mode read_mode = ADXL367_14B_CHID;
     uint8_t sets_nb = 170;
-
-    // struct sensor_trigger trig = {
-	// 	.type = SENSOR_TRIG_FIFO_FULL,
-	// 	.chan = SENSOR_CHAN_ACCEL_XYZ,
-	// };
 
     // Briefly disable measurement mode so we can alter fifo setup
     ret = adxl367_set_op_mode(dev, ADXL367_STANDBY);
@@ -72,11 +67,15 @@ bool setup_adxl367_fifo_buffer(const struct device *dev) {
 }
 
 bool retrieve_adxl367_fifo_buffer(const struct device *dev, uint8_t *buf, uint32_t buf_len) {
-    int rc;
+    static int rc = 0;
+    static bool flag = false;
     struct rtio_sqe *handle;
     struct rtio_cqe *cqe;
     
-    rc = sensor_stream(&accel_stream, &accel_ctx, buf, &handle);
+    if (!flag) {
+        rc = sensor_stream(&accel_stream, &accel_ctx, buf, &handle); 
+        flag = true;
+    }
     if (rc) {
         printk("ADXL FIFO setup: failed to start sensor stream.\n");
         return false;
@@ -95,6 +94,14 @@ bool retrieve_adxl367_fifo_buffer(const struct device *dev, uint8_t *buf, uint32
 	}
 
     printk("Successfully read FIFO buffer.\n");
+    printk("FIFO Buffer size: %d\n", buf_len);
+    for (size_t i = 0; i < 1024; i++) {
+        printf("0x%02X ", buf[i]);  // Print each byte in hexadecimal
+        if ((i + 1) % 16 == 0) {  // Print new line every 16 bytes
+            printf("\n");
+        }
+    }
+    
 
     rtio_cqe_release(&accel_ctx, cqe);
     rtio_release_buffer(&accel_ctx, buf, buf_len);
@@ -136,7 +143,7 @@ bool test_adxl367_sensor_stream(const struct device *adxl367_dev) {
 	/* Start the stream */
 	printk("sensor_stream\n");
     if (!flag) {
-        rc = sensor_stream(&accel_stream, &accel_ctx, buf, &handle);
+        rc = sensor_stream(&accel_stream, &accel_ctx, NULL, &handle);
         flag = true;
     }
     //rc = sensor_stream(&accel_stream, &accel_ctx, buf, &handle);
@@ -144,9 +151,9 @@ bool test_adxl367_sensor_stream(const struct device *adxl367_dev) {
         printk("ADXL FIFO setup: failed to start sensor stream.\n");
         return false;
     }
-    k_sleep(K_SECONDS(10));
 
 	while (1) {
+        //k_sleep(K_SECONDS(10));
 		cqe = rtio_cqe_consume_block(&accel_ctx);
 
 		if (cqe->result != 0) {
@@ -174,7 +181,13 @@ bool test_adxl367_sensor_stream(const struct device *adxl367_dev) {
 			printk("sensor_get_decoder failed %d\n", rc);
 			return false;
 		}
-
+        printk("Raw accelerometer bytes.\n");
+        for (int i = 0; i < buf_len; i++) {
+            printk("0x%02X ", buf[i]);
+            if ((i + 1) % 16 == 0) {
+                printk("\n");
+            }
+        }
 		/* Frame iterator values when data comes from a FIFO */
 		uint32_t accel_fit = 0;
 
@@ -200,19 +213,19 @@ bool test_adxl367_sensor_stream(const struct device *adxl367_dev) {
 
 		int i = 0;
 
-		while (i < frame_count) {
-			int8_t c = 0;
+		// while (i < frame_count) {
+		// 	int8_t c = 0;
 
-			/* decode and print Accelerometer FIFO frames */
-			c = decoder->decode(buf, accel_chan, &accel_fit, 8, accel_data);
+		// 	/* decode and print Accelerometer FIFO frames */
+		// 	c = decoder->decode(buf, accel_chan, &accel_fit, 8, accel_data);
 
-			for (int k = 0; k < c; k++) {
-				printk("XL data for %s %lluns (%" PRIq(6) ", %" PRIq(6)
-				       ", %" PRIq(6) ")\n", adxl367_dev->name,
-				       PRIsensor_three_axis_data_arg(*accel_data, k));
-			}
-			i += c;
-		}
+		// 	for (int k = 0; k < c; k++) {
+		// 		printk("XL data for %s %lluns (%" PRIq(6) ", %" PRIq(6)
+		// 		       ", %" PRIq(6) ")\n", adxl367_dev->name,
+		// 		       PRIsensor_three_axis_data_arg(*accel_data, k));
+		// 	}
+		// 	i += c;
+		// }
 
 		rtio_release_buffer(&accel_ctx, buf, buf_len);
 	}

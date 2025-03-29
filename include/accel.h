@@ -12,9 +12,9 @@
 #define ADXL367_NODE DT_NODELABEL(adxl367)
 
 // ADXL367 RTIO-relevant definitions
-#define N     (8)
-#define SQ_SZ (1) // Number of start events queued at a time
-#define CQ_SZ (1) // Number of completion events consumed at a time
+#define N     (2)
+#define SQ_SZ (N) // Number of start events queued at a time
+#define CQ_SZ (N) // Number of completion events consumed at a time
 #define NUM_BLKS 1
 #define BLK_SZ 1024
 #define BLK_ALIGN 2 // uint16_t aligned
@@ -34,5 +34,4 @@ bool test_adxl367_sensor_stream(const struct device *adxl367_dev);
 void init_bandpass_filter();
 
 void process_bandpass_filter(float32_t *input, float32_t *output);
-
 #endif /* ACCEL_H */
