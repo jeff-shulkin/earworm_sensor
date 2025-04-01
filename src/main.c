@@ -20,6 +20,8 @@
  /* The devicetree node identifier for the "led0" alias. */
  #define LED0_NODE DT_ALIAS(led0)
  #define ACCEL_NODE DT_ALIAS(adxl367)
+ K_FIFO_DEFINE(fifo);
+ K_SEM_DEFINE(poll_buffer, 0, 1);
  /*
   * A build error on this line means your board is unsupported.
   * See the sample documentation for information on how to fix this.
@@ -29,9 +31,9 @@
 
 int main(void)
 {
+	uint8_t buffer[ADXL367_RTIO_BUF_SIZE] = {0};
     printk("Initializing Power-Fail Comparator...\n");
 	int ret;
-	//bool led_state = true;
 
 	if (!gpio_is_ready_dt(&led)) {
 		return 0;
@@ -43,22 +45,22 @@ int main(void)
 	}
 
     configure_pof_interrupt();
+
+	//ble_init();
+
 	if (!check_adxl367(adxl367_dev)) {
 		exit(1);
 	}
 
-	if (!setup_adxl367_fifo_buffer(adxl367_dev)) {
-		exit(1);
-	}
-
-	uint8_t buffer[1024] = {0};
-
-	ble_init();
+//    if (!setup_adxl367_fifo_buffer(adxl367_dev, buffer)) {
+// 	   exit(1);
+//    }
+	test_adxl367(adxl367_dev);
 
     while (1)
     {
-        k_sleep(K_SECONDS(1));  // Sleep to reduce CPU usage
-		if (!retrieve_adxl367_fifo_buffer(adxl367_dev, buffer, 1024)) {
+     	k_sleep(K_SECONDS(1));  // Sleep to reduce CPU usage
+		if (!retrieve_adxl367_fifo_buffer(adxl367_dev, buffer, 768)) {
 			printk("Failed to retrieve FIFO buffer.\n");
 			exit(1);
 		}

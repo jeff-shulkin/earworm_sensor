@@ -15,6 +15,8 @@
 LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 
 static K_SEM_DEFINE(ble_init_ok, 0, 1);
+extern struct k_sem poll_buffer;
+extern struct k_fifo fifo;
 static struct bt_conn *current_conn;
 
 static const struct bt_data ad[] = {
@@ -110,6 +112,10 @@ static void bt_receive_cb(struct bt_conn *conn, const uint8_t *const data, uint1
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, ARRAY_SIZE(addr));
 
     LOG_INF("Received data from %s: %.*s", addr, len, data);
+    printk("data: %s", addr, len);
+    if (!strcmp(data, "heartbeats")) {
+        k_sem_give(&poll_buffer); // Wake up accelerometer thread and poll buffer
+    }
 }
 
 /* Nordic UART Service callback */
@@ -152,6 +158,7 @@ static struct bt_nus_cb nus_cb = {
 
 
 /* BLE Interface functions */
+
 /* BLE initialization function (exposed in ble.h) */
 void ble_init(void)
 {
@@ -164,7 +171,7 @@ void ble_init(void)
         error();
     }
 
-    LOG_INF("Bluetooth initialized");
+    printk("Bluetooth initialized\n");
 
     /* Set TX Power to 0 dBm */
     // set_tx_power();
@@ -177,13 +184,13 @@ void ble_init(void)
 
     err = bt_nus_init(&nus_cb);
     if (err) {
-        LOG_ERR("Failed to initialize UART service (err: %d)", err);
+        printk("Failed to initialize UART service (err: %d)", err);
         return;
     }
 
     err = bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
     if (err) {
-        LOG_ERR("Advertising failed to start (err %d)", err);
+        printk("Advertising failed to start (err %d)", err);
         return;
     }
 }
@@ -198,24 +205,24 @@ void error(void)
 }
 
 /* Thread for sending BLE messages */
-void ble_send_thread(void)
+void ble_send_thread(void *p1, void *p2)
 {
     /* Wait until BLE is initialized */
     k_sem_take(&ble_init_ok, K_FOREVER);
 
-
     while (1) {
         if (current_conn) {  // Send only if a device is connected
-            const char msg[] = "Hello, nRF_iphone!";
-            int err = bt_nus_send(current_conn, buffer, length);
+            uint8_t* fifo_data = k_fifo_get(&fifo, K_FOREVER);
+            int err = bt_nus_send(current_conn, fifo_data, 256);
             if (err) {
                 printk("Failed to send data over BLE (err %d)", err);
             } else {
-                printk("Sent: %s", msg);
+                printk("Sent FIFO Buffer.\n");
             }
+            k_free(fifo_data);
         }
         k_sleep(K_SECONDS(5)); // Send every 5 seconds
     }
 }
 
-K_THREAD_DEFINE(ble_send_thread_id, STACKSIZE, ble_send_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+//K_THREAD_DEFINE(ble_send_thread_id, BLE_STACKSIZE, ble_send_thread, NULL, NULL, NULL, PRIORITY, 0, 0);

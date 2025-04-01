@@ -6,14 +6,16 @@
 #include <zephyr/rtio/rtio.h>
 #include <zephyr/drivers/sensor.h>
 
-#define NUM_SENSORS 1
 SENSOR_DT_STREAM_IODEV(accel_stream, DT_NODELABEL(adxl367), \
      {SENSOR_TRIG_FIFO_WATERMARK, SENSOR_STREAM_DATA_INCLUDE});
+
 //SENSOR_DT_READ_IODEV(accel_stream, DT_NODELABEL(adxl367), { SENSOR_CHAN_ACCEL_XYZ, 0 });
 
 RTIO_DEFINE_WITH_MEMPOOL(accel_ctx, SQ_SZ, CQ_SZ, NUM_BLKS, BLK_SZ, BLK_ALIGN);
-//RTIO_DEFINE(accel_ctx, SQ_SZ, CQ_SZ);
-
+//RTIO_DEFINE(accel_ctx, 4, 4);
+K_SEM_DEFINE(sample, 0, 1);
+extern struct k_sem poll_buffer;
+extern struct k_fifo fifo;
 
 bool check_adxl367(const struct device *adxl367_dev)
 {
@@ -81,13 +83,17 @@ bool retrieve_adxl367_fifo_buffer(const struct device *dev, uint8_t *buf, uint32
         return false;
     }
 
+    //k_sem_take(&poll_buffer, K_FOREVER);
+
+    k_sleep(K_SECONDS(10));
     cqe = rtio_cqe_consume_block(&accel_ctx);
     if (cqe->result != 0) {
         printk("async read failed %d\n", cqe->result);
         return false;
     }
     
-	rc = rtio_cqe_get_mempool_buffer(&accel_ctx, cqe, &buf, &buf_len);
+	rc = rtio_cqe_get_mempool_buffer(&accel_ctx, cqe, NULL, &buf_len);
+    //rc = sensor_read(&accel_stream, &accel_ctx, buf, 768);
 	if (rc != 0) {
 		printk("get mempool buffer failed %d\n", rc);
 		return false;
@@ -95,24 +101,38 @@ bool retrieve_adxl367_fifo_buffer(const struct device *dev, uint8_t *buf, uint32
 
     printk("Successfully read FIFO buffer.\n");
     printk("FIFO Buffer size: %d\n", buf_len);
-    for (size_t i = 0; i < 1024; i++) {
-        printf("0x%02X ", buf[i]);  // Print each byte in hexadecimal
+    for (size_t i = 0; i < buf_len; i++) {
+        printk("0x%02X ", buf[i]);  // Print each byte in hexadecimal
         if ((i + 1) % 16 == 0) {  // Print new line every 16 bytes
-            printf("\n");
+            printk("\n");
         }
     }
     
+    k_fifo_put(&fifo, buf);
 
     rtio_cqe_release(&accel_ctx, cqe);
     rtio_release_buffer(&accel_ctx, buf, buf_len);
-    //rtio_sqe_prep_read_with_pool(sqe, iodev, RTIO_PRIO_HIGH, NULL);
     return true;
 }
 
-void adxl367_trigger_handler(const struct device *dev, const struct sensor_trigger *trigger) {
-    printf("TRIGGER HANDLER: NOTHING EVER HAPPENS\n");
+void adxl367_data_ready_handler(const struct device *dev, const struct sensor_trigger *trigger) {
+    sensor_channel_fetch(dev);
+    k_sem_give(&sample);
 }
 
+void retreive_adxl367_samples(const struct device *dev, int16_t *buf, uint32_t len) {
+    uint16_t x = 0;
+    uint16_t y = 0;
+    uint16_t z = 0;
+    for (int i = 0; i < 128; ++i) {
+        k_sem_take(&sample, K_FOREVER);
+        struct adxl367_data *dev_data = dev->data;
+        buf[i] = dev_data->sample.x;
+        buf[i + 1] = dev_data->sample.y;
+        buf[i + 2] = dev_data->sample.z;
+    }
+    k_fifo_put(&fifo, buf);
+}
 void test_adxl367(const struct device *adxl367_dev) {
     adxl367_dev = DEVICE_DT_GET_ONE(adi_adxl367);
     struct sensor_value accel_vals[3]; 

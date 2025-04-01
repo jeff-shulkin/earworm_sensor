@@ -12,12 +12,12 @@
 #define ADXL367_NODE DT_NODELABEL(adxl367)
 
 // ADXL367 RTIO-relevant definitions
-#define N     (2)
+#define N     (1)
 #define SQ_SZ (N) // Number of start events queued at a time
 #define CQ_SZ (N) // Number of completion events consumed at a time
-#define NUM_BLKS 1
-#define BLK_SZ 1024
-#define BLK_ALIGN 2 // uint16_t aligned
+#define NUM_BLKS 10
+#define BLK_SZ 256
+#define BLK_ALIGN sizeof(void *) // uint16_t aligned
 
 #define ADXL367_RTIO_BUF_SIZE 1024
 #define SAMPLE_PERIOD 1
@@ -26,6 +26,7 @@
 bool check_adxl367(const struct device *dev);
 bool setup_adxl367_fifo_buffer(const struct device *dev);
 bool retrieve_adxl367_fifo_buffer(const struct device *dev, uint8_t *buf, uint32_t buf_len);
+void retrieve_adxl367_samples(const struct device *dev, int16_t *buf, uint32_t buf_len);
 void adxl367_trigger_handler(const struct device *dev, const struct sensor_trigger *trigger);
 
 void test_adxl367(const struct device *dev);

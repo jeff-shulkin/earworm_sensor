@@ -15,23 +15,23 @@
 	spi21_default: spi21_default {
 		group1 {
 			psels = <NRF_PSEL(SPIM_SCK, 1, 11)>,
-                    <NRF_PSEL(SPIM_MOSI, 1, 13)>, 
-                    <NRF_PSEL(SPIM_MISO, 1, 14)>;
+                    <NRF_PSEL(SPIM_MOSI, 1, 12)>, 
+                    <NRF_PSEL(SPIM_MISO, 1, 13)>;
 		};
 	};
 
 	spi21_sleep: spi21_sleep {
 		group1 {
 			psels = <NRF_PSEL(SPIM_SCK, 1, 11)>,
-					<NRF_PSEL(SPIM_MOSI, 1, 13)>,
-					<NRF_PSEL(SPIM_MISO, 1, 14)>;
+					<NRF_PSEL(SPIM_MOSI, 1, 12)>,
+					<NRF_PSEL(SPIM_MISO, 1, 13)>;
             low-power-enable;
 		};
 	};
 };
 
 &led0 {
-    status = "okay";
+    status = "disabled";
     gpios = <&gpio1 2 0>;
 };
 
@@ -48,10 +48,11 @@
             reg = <0>;
             /* Configure other ADXL367 properties as needed. */
             spi-max-frequency = <DT_FREQ_M(1)>;
-            odr = <2>; /* ODR: 50 Hz */
-            int1-gpios = <&gpio1 12 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>; /* P1.12 interrupt */
+            odr = <5>; /* ODR: 50 Hz */
+            int1-gpios = <&gpio1 9 (GPIO_ACTIVE_HIGH)>; /* P1.09 interrupt */
      };
 };
+
 &button0 {status = "disabled";};
 &button1 {status = "disabled";};
 &button2 {status = "disabled";};
@@ -59,3 +60,9 @@
 &led1 {status = "disabled";};
 &led2 {status = "disabled";};
 &led3 {status = "disabled";};
+
+//&uart20 {status = "disabled";};
+//&uart21 {status = "disabled";};
+
+/delete-node/ &{/pin-controller/pwm20_default/group1/};
+/delete-node/ &{/pin-controller/pwm20_sleep/group1/};

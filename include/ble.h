@@ -22,7 +22,7 @@
 #include <zephyr/bluetooth/addr.h>
 #include <zephyr/bluetooth/hci_types.h>
 
-#define STACKSIZE CONFIG_BT_NUS_THREAD_STACK_SIZE
+#define BLE_STACKSIZE CONFIG_BT_NUS_THREAD_STACK_SIZE
 #define PRIORITY 7
 
 #define DEVICE_NAME CONFIG_BT_DEVICE_NAME
@@ -31,9 +31,11 @@
 #define RUN_STATUS_LED DK_LED1
 #define RUN_LED_BLINK_INTERVAL 1000
 
+extern struct k_fifo fifo;
+
 /* Function prototypes */
 void ble_init(void);
-void ble_send_thread(void);
+void ble_send_thread(void *p1, void *p2);
 void error(void);
 
 #endif /* BLE_H */
