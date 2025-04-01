@@ -6,6 +6,7 @@
 #include <zephyr/drivers/uart.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <bluetooth/services/nus.h>
+#include <bluetooth/services/throughput.h>
 #include <dk_buttons_and_leds.h>
 #include <zephyr/settings/settings.h>
 #include <stdio.h>

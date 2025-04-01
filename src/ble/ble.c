@@ -212,8 +212,12 @@ void ble_send_thread(void *p1, void *p2)
 
     while (1) {
         if (current_conn) {  // Send only if a device is connected
-            uint8_t* fifo_data = k_fifo_get(&fifo, K_FOREVER);
-            int err = bt_nus_send(current_conn, fifo_data, 256);
+            uint8_t* fifo_data = k_fifo_get(&fifo, K_SECONDS(5));
+            if (fifo_data == NULL) {
+                printk("FIFO retrieval timed out\n");
+                exit(1);
+            }
+            int err = bt_nus_send(current_conn, fifo_data, 768);
             if (err) {
                 printk("Failed to send data over BLE (err %d)", err);
             } else {
@@ -221,8 +225,8 @@ void ble_send_thread(void *p1, void *p2)
             }
             k_free(fifo_data);
         }
-        k_sleep(K_SECONDS(5)); // Send every 5 seconds
+        //k_sleep(K_SECONDS(5)); // Send every 5 seconds
     }
 }
 
-//K_THREAD_DEFINE(ble_send_thread_id, BLE_STACKSIZE, ble_send_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(ble_send_thread_id, BLE_STACKSIZE, ble_send_thread, NULL, NULL, NULL, PRIORITY, 0, 0);

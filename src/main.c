@@ -32,6 +32,7 @@
 int main(void)
 {
 	uint8_t buffer[ADXL367_RTIO_BUF_SIZE] = {0};
+	int16_t sample_buffer[128 * 3] = {0};
     printk("Initializing Power-Fail Comparator...\n");
 	int ret;
 
@@ -46,7 +47,7 @@ int main(void)
 
     configure_pof_interrupt();
 
-	//ble_init();
+	ble_init();
 
 	if (!check_adxl367(adxl367_dev)) {
 		exit(1);
@@ -55,15 +56,27 @@ int main(void)
 //    if (!setup_adxl367_fifo_buffer(adxl367_dev, buffer)) {
 // 	   exit(1);
 //    }
-	test_adxl367(adxl367_dev);
+	//test_adxl367(adxl367_dev);
+
+	struct sensor_trigger trig = {
+		.type = SENSOR_TRIG_DATA_READY,
+		.chan = SENSOR_CHAN_ACCEL_XYZ,
+	};
+
+	ret = sensor_trigger_set(adxl367_dev, &trig, adxl367_data_ready_handler);
+	if (ret < 0) {
+		printf("Could not set tap trigger with error code: %d\n", ret);
+		return ret;
+	}
 
     while (1)
     {
-     	k_sleep(K_SECONDS(1));  // Sleep to reduce CPU usage
-		if (!retrieve_adxl367_fifo_buffer(adxl367_dev, buffer, 768)) {
-			printk("Failed to retrieve FIFO buffer.\n");
-			exit(1);
-		}
+     	// k_sleep(K_SECONDS(1));  // Sleep to reduce CPU usage
+		// if (!retrieve_adxl367_fifo_buffer(adxl367_dev, buffer, 768)) {
+		// 	printk("Failed to retrieve FIFO buffer.\n");
+		// 	exit(1);
+		// }
+		retrieve_adxl367_samples(adxl367_dev, sample_buffer, 128);
     }
 
 	return 0;

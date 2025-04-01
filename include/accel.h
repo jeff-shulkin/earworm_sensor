@@ -27,7 +27,7 @@ bool check_adxl367(const struct device *dev);
 bool setup_adxl367_fifo_buffer(const struct device *dev);
 bool retrieve_adxl367_fifo_buffer(const struct device *dev, uint8_t *buf, uint32_t buf_len);
 void retrieve_adxl367_samples(const struct device *dev, int16_t *buf, uint32_t buf_len);
-void adxl367_trigger_handler(const struct device *dev, const struct sensor_trigger *trigger);
+void adxl367_data_ready_handler(const struct device *dev, const struct sensor_trigger *trigger);
 
 void test_adxl367(const struct device *dev);
 bool test_adxl367_sensor_stream(const struct device *adxl367_dev);
