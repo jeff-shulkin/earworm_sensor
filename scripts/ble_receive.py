@@ -8,7 +8,7 @@ from bleak import BleakClient, BleakScanner
 from matplotlib import pyplot as plt
 
 EARWORM_MAC = "EF:90:1:F7:43:EA"
-EARWORM_NAME = "earworm_ble"
+EARWORM_NAME = "Nordic_UART_Service"
 UART_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
 DATA_OFFSET = 0
@@ -61,6 +61,7 @@ async def connect_and_dump_packets(device):
 
         # This part dumps all incoming packets
         await client.start_notify(UART_UUID, notification_handler)
+        asyncio.sleep(5)
         # Keep receiving notifications
         try:
             while True:
