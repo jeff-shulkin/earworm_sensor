@@ -1,0 +1,10 @@
+board:
+  name: earworm
+  vendor: ami_lab
+  socs:
+  - name: nrf54l15
+    variants:
+    - name: ns
+      cpucluster: cpuapp
+    - name: xip
+      cpucluster: cpuflpr
