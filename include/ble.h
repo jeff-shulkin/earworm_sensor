@@ -18,6 +18,7 @@
 #include <zephyr/bluetooth/hci.h>
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <zephyr/net_buf.h>
 #include <zephyr/bluetooth/addr.h>
@@ -36,6 +37,7 @@ extern struct k_fifo fifo;
 
 /* Function prototypes */
 void ble_init(void);
+void ble_send(uint8_t *buf, uint32_t buf_len);
 void ble_send_thread(void *p1, void *p2);
 void error(void);
 

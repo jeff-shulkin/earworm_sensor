@@ -34,12 +34,12 @@ static void connected(struct bt_conn *conn, uint8_t err)
     char addr[BT_ADDR_LE_STR_LEN];
 
     if (err) {
-        LOG_ERR("Connection failed, err 0x%02x", err);
+        printk("Connection failed, err 0x%02x\n", err);
         return;
     }
 
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-    LOG_INF("Connected: %s", addr);
+    printk("Connected: %s\n", addr);
 
     if (!current_conn) {
         current_conn = bt_conn_ref(conn);
@@ -50,9 +50,9 @@ static void connected(struct bt_conn *conn, uint8_t err)
     /* Request 2 Mbps PHY */
     err = bt_conn_le_phy_update(conn, BT_CONN_LE_PHY_PARAM_2M);
     if (err) {
-        LOG_ERR("PHY update failed (err %d)", err);
+        printk("PHY update failed (err %d)", err);
     } else {
-        LOG_INF("PHY update requested: 2 Mbps");
+        printk("PHY update requested: 2 Mbps\n");
     }
 
     /* Enable DLE */
@@ -63,9 +63,9 @@ static void connected(struct bt_conn *conn, uint8_t err)
 
     err = bt_conn_le_data_len_update(conn, &data_len);
     if (err) {
-        LOG_ERR("Data Length Extension update failed (err %d)", err);
+        printk("Data Length Extension update failed (err %d)\n", err);
     } else {
-        LOG_INF("DLE update successful");
+        printk("DLE update successful\n");
     }
 
     /* Set Connection Interval to 2000 ms */
@@ -78,9 +78,9 @@ static void connected(struct bt_conn *conn, uint8_t err)
 
     err = bt_conn_le_param_update(conn, &conn_param);
     if (err) {
-        LOG_ERR("Connection param update failed (err %d)", err);
+        printk("Connection param update failed (err %d)\n", err);
     } else {
-        LOG_INF("Connection params updated");
+        printk("Connection params updated\n");
     }
 }
 
@@ -90,7 +90,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
     char addr[BT_ADDR_LE_STR_LEN];
 
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-    LOG_INF("Disconnected: %s, reason 0x%02x", addr, reason);
+    printk("Disconnected: %s, reason 0x%02x\n", addr, reason);
 
     if (current_conn) {
         bt_conn_unref(current_conn);
@@ -111,7 +111,7 @@ static void bt_receive_cb(struct bt_conn *conn, const uint8_t *const data, uint1
     char addr[BT_ADDR_LE_STR_LEN] = {0};
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, ARRAY_SIZE(addr));
 
-    LOG_INF("Received data from %s: %.*s", addr, len, data);
+    printk("Received data from %s: %.*s", addr, len, data);
     printk("data: %s", addr, len);
     if (!strcmp(data, "heartbeats")) {
         k_sem_give(&poll_buffer); // Wake up accelerometer thread and poll buffer
@@ -122,6 +122,7 @@ static void bt_receive_cb(struct bt_conn *conn, const uint8_t *const data, uint1
 static struct bt_nus_cb nus_cb = {
     .received = bt_receive_cb,
 };
+
 
 // static void set_tx_power(void)
 // {
@@ -184,13 +185,13 @@ void ble_init(void)
 
     err = bt_nus_init(&nus_cb);
     if (err) {
-        printk("Failed to initialize UART service (err: %d)", err);
+        printk("Failed to initialize UART service (err: %d)\n", err);
         return;
     }
 
     err = bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
     if (err) {
-        printk("Advertising failed to start (err %d)", err);
+        printk("Advertising failed to start (err %d)\n", err);
         return;
     }
 }
@@ -204,6 +205,18 @@ void error(void)
     }
 }
 
+void ble_send(uint8_t *buf, uint32_t buf_len) {
+    if (current_conn) {
+        int err = bt_nus_send(current_conn, (void*)buf, buf_len);
+        if (err) {
+            printk("Failed to send data over BLE (err %d)", err);
+        }
+        else {
+            printk("Sent FIFO Buffer.\n");
+        }
+    }
+}
+
 /* Thread for sending BLE messages */
 void ble_send_thread(void *p1, void *p2)
 {
@@ -212,12 +225,16 @@ void ble_send_thread(void *p1, void *p2)
 
     while (1) {
         if (current_conn) {  // Send only if a device is connected
-            uint8_t* fifo_data = k_fifo_get(&fifo, K_SECONDS(5));
+            printk("Retrieving FIFO data\n");
+            if (k_fifo_is_empty(&fifo)) {
+                printk("FIFO empty.\n");
+            }
+            uint8_t* fifo_data = k_fifo_get(&fifo, K_MSEC(100));
             if (fifo_data == NULL) {
                 printk("FIFO retrieval timed out\n");
                 exit(1);
             }
-            int err = bt_nus_send(current_conn, fifo_data, 768);
+            int err = bt_nus_send(current_conn, fifo_data, 20);
             if (err) {
                 printk("Failed to send data over BLE (err %d)", err);
             } else {
@@ -225,8 +242,8 @@ void ble_send_thread(void *p1, void *p2)
             }
             k_free(fifo_data);
         }
-        //k_sleep(K_SECONDS(5)); // Send every 5 seconds
+        k_msleep(100); // Send every 5 seconds
     }
 }
 
-K_THREAD_DEFINE(ble_send_thread_id, BLE_STACKSIZE, ble_send_thread, NULL, NULL, NULL, PRIORITY, 0, 0);
+//K_THREAD_DEFINE(ble_send_thread_id, BLE_STACKSIZE, ble_send_thread, NULL, NULL, NULL, PRIORITY, 0, 0);

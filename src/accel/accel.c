@@ -122,9 +122,6 @@ void adxl367_data_ready_handler(const struct device *dev, const struct sensor_tr
 }
 
 void retrieve_adxl367_samples(const struct device *dev, int16_t *buf, uint32_t len) {
-    uint16_t x = 0;
-    uint16_t y = 0;
-    uint16_t z = 0;
     //printk("entered retrieve_adxl367_samples\n");
     for (int i = 0; i < 128 * 3; i += 3) {
         k_sem_take(&sample, K_FOREVER);
@@ -133,8 +130,9 @@ void retrieve_adxl367_samples(const struct device *dev, int16_t *buf, uint32_t l
         buf[i + 1] = dev_data->sample.y;
         buf[i + 2] = dev_data->sample.z;
     }
-    k_fifo_put(&fifo, buf);
-    printk("Put buffer in fifo\n");
+
+    //k_fifo_put(&fifo, buf);
+    //printk("Put buffer in fifo\n");
     // printk("Raw accelerometer bytes.\n");
     // for (int i = 0; i < 128 * 3; i++) {
     //     printk("0x%02X ", buf[i]);

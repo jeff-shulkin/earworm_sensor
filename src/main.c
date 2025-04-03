@@ -22,6 +22,7 @@
  #define ACCEL_NODE DT_ALIAS(adxl367)
  K_FIFO_DEFINE(fifo);
  K_SEM_DEFINE(poll_buffer, 0, 1);
+
  /*
   * A build error on this line means your board is unsupported.
   * See the sample documentation for information on how to fix this.
@@ -77,6 +78,7 @@ int main(void)
 		// 	exit(1);
 		// }
 		retrieve_adxl367_samples(adxl367_dev, sample_buffer, 128);
+		ble_send((uint8_t*)sample_buffer, 128 * 3);
     }
 
 	return 0;
