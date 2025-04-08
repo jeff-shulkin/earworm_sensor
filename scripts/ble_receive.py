@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 from datetime import datetime
 from functools import partial
 import hdf5storage as h5
+import serial
 
 EARWORM_MAC = "EF:90:1:F7:43:EA"
 EARWORM_NAME = "earworm_ble"
@@ -92,6 +93,7 @@ async def connect_device(device):
     client = BleakClient(device.address)
     await client.connect()
     logger.info(f"Connected to {device.name} ({device.address})")
+    await asyncio.sleep(1)
     services = await client.get_services()
     for service in services:
         for char in service.characteristics:
@@ -115,6 +117,23 @@ def convert_values(raw_values, resolution=14):
     scale_factor = (2 * GRAVITY) / (max_val - min_val)
 
     return [val * scale_factor for val in raw_values]
+
+
+def read_serial_pulse(port='COM3', baudrate=9600, pulse_data=None, duration=60):
+    try:
+        ser = serial.Serial(port, baudrate, timeout=1)
+        print(f"Serial port {port} opened.")
+        start_time = time.time()
+
+        while time.time() - start_time < duration:
+            line = ser.readline().decode('utf-8').strip()
+            if line.isdigit():
+                value = int(line)
+                timestamp = time.time()
+                pulse_data['timestamps'].append(timestamp)
+                pulse_data['values'].append(value)
+    except Exception as e:
+        print(f"Error reading from serial: {e}")
 
 def plot_accel(accel_values, fs=50.0):
     x_vals = accel_values['accel_x']
@@ -141,6 +160,49 @@ def plot_accel(accel_values, fs=50.0):
     plt.grid(True)
     plt.show()
 
+def plot_accel_n_pulse(accel_values, pulse_data=None, fs=50.0):
+    x_vals = accel_values['accel_x']
+    y_vals = accel_values['accel_y']
+    z_vals = accel_values['accel_z']
+    time_vals = np.arange(len(x_vals)) / fs
+
+    plt.figure(figsize=(12, 8))
+
+    plt.subplot(4, 1, 1)
+    plt.plot(time_vals, x_vals, 'r', label='X-axis')
+    plt.ylabel('Accel X (g)')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(4, 1, 2)
+    plt.plot(time_vals, y_vals, 'g', label='Y-axis')
+    plt.ylabel('Accel Y (g)')
+    plt.grid()
+    plt.legend()
+
+    plt.subplot(4, 1, 3)
+    plt.plot(time_vals, z_vals, 'b', label='Z-axis')
+    plt.ylabel('Accel Z (g)')
+    plt.grid()
+    plt.legend()
+
+    if pulse_data:
+        pulse_t = np.array(pulse_data['timestamps'])
+        pulse_y = np.array(pulse_data['values'])
+
+        # Normalize time axis relative to pulse start time
+        pulse_t -= pulse_t[0]
+        plt.subplot(4, 1, 4)
+        plt.plot(pulse_t, pulse_y, color='purple', label='PulseSensor')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Pulse (a.u.)')
+        plt.grid()
+        plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+
 async def eventCap(capture_time_sec=60.0, prefix='dataCapture', sample_rate=50,
                    timestamp_tick=20000, returnDict=None):
 
@@ -150,6 +212,12 @@ async def eventCap(capture_time_sec=60.0, prefix='dataCapture', sample_rate=50,
     data['timeinfo']['tickHz'] = 20000
     data['timeinfo']['timezone'] = datetime.now().astimezone().tzname()
     data['Fs'] = sample_rate
+
+    pulse_data = {'timestamps': [], 'values': []}
+    pulse_thread = threading.Thread(target=read_serial_pulse,
+                                    args=('COM3', 9600, pulse_data, capture_time_sec),
+                                    daemon=True)
+    pulse_thread.start()
 
     # Discover and connect to target device
     device = await discover_device()
@@ -174,7 +242,11 @@ async def eventCap(capture_time_sec=60.0, prefix='dataCapture', sample_rate=50,
     print(f"Saving to file \"{filename}\"")
 #    h5.write(data, filename)
 
-    plot_accel(data['sData'])
+    pulse_thread.join()  # Wait for pulse thread to finish
+
+    plot_accel_n_pulse(data['sData'], pulse_data=pulse_data)
+
+    # plot_accel(data['sData'])
 
     if returnDict is not None:
         returnDict['filename'] = filename

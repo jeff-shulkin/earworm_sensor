@@ -9,6 +9,7 @@ from matplotlib.animation import FuncAnimation
 from datetime import datetime
 import time as time_module
 import time
+import serial
 
 # BLE configuration
 EARWORM_MAC = "EF:90:1:F7:43:EA"
@@ -30,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 # Shared data dictionary
 captured_data = {'raw_x': [], 'raw_y': [], 'raw_z': []}
+pulse_data = {'timestamps': [], 'values': []}
 
 # Convert raw values to acceleration (g)
 def convert_values(raw_values, resolution=14):
@@ -56,15 +58,23 @@ def notification_handler(sender, data, captured_data):
         logger.error(f"Error in notification handler: {e}")
 
 # Plotting function
-def plot_accel_live(captured_data, fs=50.0, buffer_sec=3):
+def plot_accel_live(captured_data, pulse_data, fs=50.0, buffer_sec=3):
     buffer_size = int(fs * buffer_sec)
 
-    fig, (ax_x, ax_y, ax_z) = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
+    # fig, (ax_x, ax_y, ax_z) = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
+    fig, (ax_x, ax_y, ax_z, ax_pulse) = plt.subplots(4, 1, figsize=(10, 10), sharex=True)
+
     fig.suptitle('Real-time Acceleration Data')
 
     line_x, = ax_x.plot([], [], color='r', label='X-axis')
     line_y, = ax_y.plot([], [], color='g', label='Y-axis')
     line_z, = ax_z.plot([], [], color='b', label='Z-axis')
+    line_pulse, = ax_pulse.plot([], [], color='purple', label='PulseSensor')
+    ax_pulse.set_ylabel('Pulse (a.u.)')
+    ax_pulse.set_xlabel('Time (s)')
+    ax_pulse.grid(True)
+    ax_pulse.legend(loc='upper right')
+
 
     for ax, label in zip([ax_x, ax_y, ax_z], ['X', 'Y', 'Z']):
         ax.set_ylabel(f'{label} (g)')
@@ -98,11 +108,38 @@ def plot_accel_live(captured_data, fs=50.0, buffer_sec=3):
         ax_y.set_xlim(t_vals[0], t_vals[-1])
         ax_z.set_xlim(t_vals[0], t_vals[-1])
 
-        return line_x, line_y, line_z
+        # PulseSensor update
+        pulse_t = pulse_data['timestamps']
+        pulse_v = pulse_data['values']
+        recent_idx = [i for i, t in enumerate(pulse_t) if t >= now - buffer_sec]
+        if recent_idx:
+            pulse_t_vals = [pulse_t[i] for i in recent_idx]
+            pulse_y_vals = [pulse_v[i] for i in recent_idx]
+            line_pulse.set_data(pulse_t_vals, pulse_y_vals)
+            ax_pulse.set_xlim(pulse_t_vals[0], pulse_t_vals[-1])
+            ax_pulse.set_ylim(min(pulse_y_vals) - 10, max(pulse_y_vals) + 10)
+
+        return line_x, line_y, line_z, line_pulse
 
     ani = FuncAnimation(fig, update, interval=5000, cache_frame_data=False)
     plt.tight_layout()
     plt.show()
+
+def read_serial_pulse(port='COM3', baudrate=9600, pulse_data=None):
+    try:
+        ser = serial.Serial(port, baudrate, timeout=1)
+        time.sleep(2)  # Give time to connect
+        print(f"Serial port {port} opened.")
+
+        while True:
+            line = ser.readline().decode('utf-8').strip()
+            if line.isdigit():
+                value = int(line)
+                timestamp = time_module.time()
+                pulse_data['timestamps'].append(timestamp)
+                pulse_data['values'].append(value)
+    except Exception as e:
+        print(f"Error reading from serial: {e}")
 
 # Discover device
 async def discover_device():
@@ -156,10 +193,13 @@ def run_event_loop(captured_data):
 # Start threads
 def total(fs=50.0, buffer_sec=3):
     capture_thread = threading.Thread(target=run_event_loop, args=(captured_data,), daemon=True)
+    pulse_thread = threading.Thread(target=read_serial_pulse, args=('COM3', 9600, pulse_data), daemon=True)
+
     capture_thread.start()
+    pulse_thread.start()
 
     # Run plot in main thread
-    plot_accel_live(captured_data, fs=fs, buffer_sec=buffer_sec)
+    plot_accel_live(captured_data, pulse_data, fs=fs, buffer_sec=buffer_sec)
 
 # Entry point
 if __name__ == "__main__":
