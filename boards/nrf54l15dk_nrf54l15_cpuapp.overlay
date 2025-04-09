@@ -50,9 +50,11 @@
             spi-max-frequency = <DT_FREQ_M(4)>;
             odr = <2>; /* ODR: 50 Hz */
             int1-gpios = <&gpio1 9 (GPIO_ACTIVE_HIGH)>; /* P1.09 interrupt */
-     };
+            wakeup-source;
+    };
 };
-
+&uart20 {status = "disabled";};
+&spi00 {status = "disabled";};
 &button0 {status = "disabled";};
 &button1 {status = "disabled";};
 &button2 {status = "disabled";};

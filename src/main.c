@@ -7,11 +7,12 @@
 #include "../include/accel.h"
 #include "../include/ble.h"
 
- #include <zephyr/kernel.h>
- #include <zephyr/device.h>
- #include <zephyr/devicetree.h>
- #include <stdio.h>
- #include <zephyr/drivers/gpio.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/pm/pm.h>
+#include <stdio.h>
+#include <zephyr/drivers/gpio.h>
 
  
  /* 1000 msec = 1 sec */
@@ -32,8 +33,12 @@
 
 int main(void)
 {
+	// Force System ON idle as the only allowed state
+	int key = 0;
+	key = irq_lock();
+	k_cpu_atomic_idle(key);
 	uint8_t buffer[ADXL367_RTIO_BUF_SIZE] = {0};
-	int16_t sample_buffer[128 * 3] = {0};
+	int16_t sample_buffer[ADXL367_SAMPLE_SET * 3] = {0};
     printk("Initializing Power-Fail Comparator...\n");
 	int ret;
 
@@ -77,8 +82,8 @@ int main(void)
 		// 	printk("Failed to retrieve FIFO buffer.\n");
 		// 	exit(1);
 		// }
-		retrieve_adxl367_samples(adxl367_dev, sample_buffer, 128);
-		ble_send((uint8_t*)sample_buffer, 128 * 3);
+		retrieve_adxl367_samples(adxl367_dev, sample_buffer, ADXL367_SAMPLE_SET);
+		ble_send((uint8_t*)sample_buffer, ADXL367_SAMPLE_SET * 6);
     }
 
 	return 0;

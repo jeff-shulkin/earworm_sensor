@@ -9,7 +9,7 @@ DEVICE = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("
 
 # Test function with confusion matrix (percentage) & model saving
 def test_model(model, test_loader):
-    # load dopplerCNN model
+    # load motionDetection model
     predictions = []
     labels = []
     num_total = 0

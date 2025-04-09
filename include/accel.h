@@ -20,6 +20,7 @@
 #define BLK_ALIGN sizeof(void *) // uint16_t aligned
 
 #define ADXL367_RTIO_BUF_SIZE 1024
+#define ADXL367_SAMPLE_SET 170
 #define SAMPLE_PERIOD 1
 
 

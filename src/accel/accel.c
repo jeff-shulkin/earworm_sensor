@@ -118,28 +118,20 @@ bool retrieve_adxl367_fifo_buffer(const struct device *dev, uint8_t *buf, uint32
 void adxl367_data_ready_handler(const struct device *dev, const struct sensor_trigger *trigger) {
     //printk("entered adxl367_data_ready_handler\n");
     sensor_sample_fetch(dev);
-    k_sem_give(&sample);
+    //k_sem_give(&sample);
 }
 
 void retrieve_adxl367_samples(const struct device *dev, int16_t *buf, uint32_t len) {
-    //printk("entered retrieve_adxl367_samples\n");
-    for (int i = 0; i < 128 * 3; i += 3) {
-        k_sem_take(&sample, K_FOREVER);
+    unsigned int key = 0;
+    for (int i = 0; i < len * 3; i += 3) {
+        // Put the CPU in idle mode and wait for data ready interrupt
+        key = irq_lock();
+        k_cpu_atomic_idle(key);
         struct adxl367_data *dev_data = dev->data;
         buf[i] = dev_data->sample.x;
         buf[i + 1] = dev_data->sample.y;
         buf[i + 2] = dev_data->sample.z;
     }
-
-    //k_fifo_put(&fifo, buf);
-    //printk("Put buffer in fifo\n");
-    // printk("Raw accelerometer bytes.\n");
-    // for (int i = 0; i < 128 * 3; i++) {
-    //     printk("0x%02X ", buf[i]);
-    //     if ((i + 1) % 16 == 0) {
-    //         printk("\n");
-    //     }
-    // }
 }
 void test_adxl367(const struct device *adxl367_dev) {
     adxl367_dev = DEVICE_DT_GET_ONE(adi_adxl367);

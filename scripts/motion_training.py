@@ -53,7 +53,7 @@ def train_model():
         #  TRAIN
         # =====================================================================
 
-        model.train() # Set model to train
+        model.train()
         epoch_loss_history = []
         num_correct = 0
         num_total = 0

@@ -112,7 +112,6 @@ static void bt_receive_cb(struct bt_conn *conn, const uint8_t *const data, uint1
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, ARRAY_SIZE(addr));
 
     printk("Received data from %s: %.*s", addr, len, data);
-    printk("data: %s", addr, len);
     if (!strcmp(data, "heartbeats")) {
         k_sem_give(&poll_buffer); // Wake up accelerometer thread and poll buffer
     }
@@ -207,12 +206,17 @@ void error(void)
 
 void ble_send(uint8_t *buf, uint32_t buf_len) {
     if (current_conn) {
-        int err = bt_nus_send(current_conn, (void*)buf, buf_len);
-        if (err) {
-            printk("Failed to send data over BLE (err %d)", err);
-        }
-        else {
-            printk("Sent FIFO Buffer.\n");
+        uint32_t offset = 0;
+        while (offset < buf_len) {
+            uint32_t chunk_len = (buf_len - offset > BLE_CHUNK_SIZE) ? BLE_CHUNK_SIZE : (buf_len - offset);
+            int err = bt_nus_send(current_conn, (void*)(buf + offset), chunk_len);
+            if (err) {
+                printk("Failed to send data over BLE (err %d)\n", err);
+            }
+            else {
+                printk("Sent FIFO Buffer.\n");
+            }
+            offset += chunk_len;
         }
     }
 }

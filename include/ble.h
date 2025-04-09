@@ -33,6 +33,8 @@
 #define RUN_STATUS_LED DK_LED1
 #define RUN_LED_BLINK_INTERVAL 1000
 
+#define BLE_CHUNK_SIZE 510
+
 extern struct k_fifo fifo;
 
 /* Function prototypes */
