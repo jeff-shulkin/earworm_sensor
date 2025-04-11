@@ -53,8 +53,7 @@
             wakeup-source;
     };
 };
-&uart20 {status = "disabled";};
-&spi00 {status = "disabled";};
+
 &button0 {status = "disabled";};
 &button1 {status = "disabled";};
 &button2 {status = "disabled";};
@@ -63,8 +62,21 @@
 &led2 {status = "disabled";};
 &led3 {status = "disabled";};
 
-//&uart20 {status = "disabled";};
+&spi00 {status = "disabled";};
 //&uart21 {status = "disabled";};
+&pwm20 {status = "disabled";};
 
 /delete-node/ &{/pin-controller/pwm20_default/group1/};
 /delete-node/ &{/pin-controller/pwm20_sleep/group1/};
+
+&temp {
+	status = "disabled";
+};
+
+&ficr {
+	status = "disabled";
+};
+
+&uicr {
+	status = "disabled";
+};

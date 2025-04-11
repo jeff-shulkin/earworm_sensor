@@ -6,4 +6,7 @@ config BT_CTLR
 config ROM_START_OFFSET
 	default 0x800 if BOOTLOADER_MCUBOOT
 
+config GPIO
+    default y
+
 endif # BOARD_EARWORM_CPUAPP

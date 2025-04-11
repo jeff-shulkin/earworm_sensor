@@ -4,13 +4,13 @@
 #define SLEEP_TIME_MS   1000
 
 /* The devicetree node identifier for the "led0" alias. */
-#define LED0_NODE DT_ALIAS(led0)
+//#define LED0_NODE DT_ALIAS(led0)
 
 /*
  * A build error on this line means your board is unsupported.
  * See the sample documentation for information on how to fix this.
  */
-static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
+//static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 
 void power_fail_handler(void)
 {
@@ -20,7 +20,7 @@ void power_fail_handler(void)
         // Clear the event
         nrf_power_event_clear(NRF_POWER, NRF_POWER_EVENT_POFWARN);
 
-        gpio_pin_toggle_dt(&led);
+        //gpio_pin_toggle_dt(&led);
 
         printk("Power failure warning detected!\n");
     }

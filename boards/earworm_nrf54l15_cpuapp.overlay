@@ -1,0 +1,32 @@
+/*
+ * Copyright (c) 2024 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+ */
+
+ 
+/ {
+    aliases {
+        stream = &adxl367;
+    };
+};
+
+
+&spi00 { 
+    status = "okay";
+    compatible = "nordic,nrf-spim";
+    pinctrl-0 = <&spi00_default>;
+    pinctrl-1 = <&spi00_sleep>;
+    pinctrl-names = "default", "sleep";
+    cs-gpios = <&gpio2 5 GPIO_ACTIVE_LOW>;
+    adxl367: adxl367@0 {
+            compatible = "adi,adxl367";
+            label = "adxl367";
+            reg = <0>;
+            /* Configure other ADXL367 properties as needed. */
+            spi-max-frequency = <DT_FREQ_M(4)>;
+            odr = <2>; /* ODR: 50 Hz */
+            int1-gpios = <&gpio2 6 (GPIO_ACTIVE_HIGH)>; /* P2.06 interrupt */
+            wakeup-source;
+    };
+};

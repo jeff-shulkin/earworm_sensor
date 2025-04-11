@@ -21,19 +21,19 @@
 
 	/* These aliases are provided for compatibility with samples */
 	aliases {
-		led0 = &led0;
-		led1 = &led1;
-		led2 = &led2;
-		led3 = &led3;
-		pwm-led0 = &pwm_led0;
-		sw0 = &button0;
-		sw1 = &button1;
-		sw2 = &button2;
-		sw3 = &button3;
-		bootloader-led0 = &led0;
-		mcuboot-button0 = &button0;
-		mcuboot-led0 = &led0;
-		watchdog0 = &wdt0;
+		//led0 = &led0;
+		//led1 = &led1;
+		//led2 = &led2;
+		//led3 = &led3;
+		//pwm-led0 = &pwm_led0;
+		//sw0 = &button0;
+		//sw1 = &button1;
+		//sw2 = &button2;
+		//sw3 = &button3;
+		//bootloader-led0 = &led0;
+		//mcuboot-button0 = &button0;
+		//mcuboot-led0 = &led0;
+		//watchdog0 = &wdt0;
 	};
 };
 
@@ -81,14 +81,16 @@
 	};
 };
 
-&lfxo {
+&clock {
 	status = "okay";
+};
+
+&lfxo {
 	load-capacitors = "internal";
 	load-capacitance-femtofarad = <12500>;
 };
 
 &hfxo {
-	status = "okay";
 	load-capacitors = "internal";
 	load-capacitance-femtofarad = <8000>;
 };
@@ -102,7 +104,23 @@
 	regulator-initial-mode = <NRF5X_REG_MODE_DCDC>;
 };
 
-&gpiote {
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&gpio2 {
+	status = "okay";
+};
+
+&gpiote20 {
+	status = "okay";
+};
+
+&gpiote30 {
 	status = "okay";
 };
 
