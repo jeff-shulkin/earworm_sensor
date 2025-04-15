@@ -21,7 +21,7 @@ def test_model(model, test_loader):
     with torch.no_grad():
         for inputs, true_labels in test_loader:
             inputs, true_labels = inputs.to(DEVICE), true_labels.to(DEVICE)
-            true_labels = true_labels.squeeze(1)
+            # true_labels = true_labels.squeeze(1)
             outputs = model(inputs)
             _, predicted_labels = torch.max(outputs, 1)
             labels += true_labels.cpu()

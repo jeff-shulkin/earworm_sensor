@@ -7,7 +7,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, random_split
 
-from motionDataset import MotionDataset
+# from motionDataset import MotionDataset
+from motionDataset import AccelDataset
+
 from motionDetection import MotionDetection
 
 from time import time
@@ -20,7 +22,9 @@ DEVICE = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("
 print(DEVICE)
 
 # Load dataset
-motionDataset = motionDataset()
+# motionDataset = motionDataset()
+buffer_size = 120
+dopplerDataset = AccelDataset("../dataset/good_data.csv", "../dataset/bad_data.csv", buffer_size)
 
 # Split dataset: 70% train, 15% val, 15% test
 train_size = int(0.7 * len(dopplerDataset))
@@ -39,14 +43,15 @@ test_dl = DataLoader(test_set, batch_size=batch_size, shuffle=True, drop_last=Tr
 # Initialize model, loss function, and optimizer
 learning_rate = 1e-3
 model = MotionDetection().to(DEVICE)
-loss_function = nn.BCELoss()
+# loss_function = nn.BCELoss()
+loss_function = nn.CrossEntropyLoss()
 optimizer = optim.Adam(params=model.parameters(), lr=learning_rate)
 
 # Training function
 def train_model():
     train_loss_history = []
     train_accuracy_history = []
-    for epoch in range(10):
+    for epoch in range(15):
         start_time = time()
 
         # =====================================================================
@@ -60,7 +65,7 @@ def train_model():
 
         for inputs, true_labels in train_dl:
             inputs, true_labels = inputs.to(DEVICE), true_labels.to(DEVICE)
-            true_labels = true_labels.squeeze(1)
+            # true_labels = true_labels.squeeze(1)
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = loss_function(outputs, true_labels)
@@ -95,7 +100,7 @@ def validate_model(model):
     with torch.no_grad():
         for inputs, true_labels in val_dl:
             inputs, true_labels = inputs.to(DEVICE), true_labels.to(DEVICE)
-            true_labels = true_labels.squeeze(1)
+            # true_labels = true_labels.squeeze(1)
             outputs = model(inputs)
             loss = loss_function(outputs, true_labels)
             epoch_loss_history.append(loss.item())
@@ -109,9 +114,11 @@ def validate_model(model):
     print(f"Validation accuracy: {validation_accuracy_history[-1]} %")
 
 # Train and validate the model
+print("Start Model Training")
 train_model()
 
 # Test model
+print("Start Model Testing")
 test_model(model, test_dl)
 
 # Test single inference time on CPU

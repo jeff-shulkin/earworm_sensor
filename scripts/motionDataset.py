@@ -2,6 +2,7 @@ import torch
 import torchaudio
 from torchvision.transforms import Resize
 import numpy as np
+import pandas as pd
 import os
 from scipy.io.wavfile import read
 from scipy.signal import butter, filtfilt, spectrogram
@@ -119,3 +120,34 @@ class HeartbeatDataset(Dataset):
 
         # Return the spectrogram as a torch.Tensor (1024×133) and the label as torch.LongTensor.
         return torch.Tensor(signal), torch.LongTensor([label])
+
+
+
+
+class AccelDataset(Dataset):
+    def __init__(self, good_csv, bad_csv, buffer_size=128):
+        self.buffer_size = buffer_size
+        self.data = []
+        self.labels = []
+
+        for file_path, label in [(good_csv, 1), (bad_csv, 0)]:
+            df = pd.read_csv(file_path)[['x', 'y', 'z']].to_numpy()
+            num_chunks = len(df) // buffer_size
+
+            for i in range(num_chunks):
+                chunk = df[i * buffer_size: (i + 1) * buffer_size]
+                chunk = chunk.T  # shape (3, buffer_size)
+                self.data.append(chunk)
+                self.labels.append(label)
+
+        # self.data = torch.tensor(self.data, dtype=torch.float32)
+        # self.labels = torch.tensor(self.labels, dtype=torch.long)
+        self.data = torch.tensor(np.array(self.data), dtype=torch.float32)
+        self.labels = torch.tensor(self.labels, dtype=torch.long).view(-1)  # ensures 1D labels
+
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        return self.data[idx], self.labels[idx]
